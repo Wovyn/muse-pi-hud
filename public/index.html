@@ -14,10 +14,10 @@
     <span class="brand-name">MUSE-PI-1 <span class="dim">// MUSE GADGET HUD</span></span>
   </div>
   <div class="topbar-right">
-    <button id="btn-menu" class="btn btn-menu" title="menu">&#9776;</button>
     <button id="btn-theme" class="btn" title="toggle light / dark mode">&#9788; LIGHT</button>
     <span id="clock" class="clock">--:--:--</span>
     <span id="ws-status" class="ws-status offline" title="websocket link">LINK: OFFLINE</span>
+    <button id="btn-menu" class="btn btn-menu" title="menu">&#9776;</button>
   </div>
   <div id="menu" class="menu hidden">
     <button id="menu-settings" class="menu-item">Settings</button>
@@ -46,16 +46,12 @@
     </div>
   </section>
 
+  <div class="right-stack">
   <section class="panel procs">
     <h2><span class="h2-glyph">&#9638;</span> PROCESS CONSTELLATION <span class="view-toggle"><button data-view="graph" class="active">GRAPH</button><button data-view="table">TABLE</button></span></h2>
     <div id="proc-graph" class="proc-graph"></div>
     <div id="proc-list" class="proc-list"><div class="dim">awaiting telemetry…</div></div>
     <div class="panel-note">nodes drift on live CPU — size ~ activity, hue ~ memory, links = parent&rarr;child</div>
-  </section>
-
-  <section class="panel collectors">
-    <h2><span class="h2-glyph">&#9638;</span> DATA UPLINKS</h2>
-    <div id="collector-list" class="collector-list"><div class="dim">awaiting telemetry…</div></div>
   </section>
 
   <section class="panel console-panel">
@@ -79,6 +75,7 @@
     </div>
     <div class="panel-note">hover a glyph for details — click the rain to open the chronological log</div>
   </section>
+  </div>
 </main>
 
 <div id="modal-overlay" class="modal-overlay hidden">
@@ -111,6 +108,11 @@
     <button id="event-modal-close" class="modal-close" title="close">&times;</button>
   </div>
 </div>
+
+<aside class="uplink-bar" aria-label="Data uplinks">
+  <span class="uplink-title"><span class="h2-glyph">&#9638;</span> DATA UPLINKS</span>
+  <div id="uplink-items" class="uplink-items"><span class="dim">awaiting telemetry…</span></div>
+</aside>
 
 <footer class="foot">
   <span class="dim">MUSE-PI-1 // MUSE GADGET HUD // collectors: vitals, processes, network, mqtt(stub), audit(waiting)</span>

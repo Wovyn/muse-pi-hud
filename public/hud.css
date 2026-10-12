@@ -43,7 +43,7 @@ body.light .brand-mark, body.light .brand-name,
 body.light .clock, body.light .ws-status.online { text-shadow: none; }
 body.light .console { background: rgba(255,255,255,0.65); }
 body.light .ev.sev-info { color: #0d6e8f; }
-body.light .proc-row, body.light .coll-row { border-bottom-color: rgba(10,80,110,0.25); }
+body.light .proc-row { border-bottom-color: rgba(10,80,110,0.25); }
 body.light .gauge:hover { background: rgba(10,125,153,0.06); }
 body.light .gauge.sel {
   border-color: rgba(10,125,153,0.6);
@@ -87,7 +87,6 @@ body {
 .grid {
   display: grid; gap: 12px; padding: 12px 18px;
   grid-template-columns: repeat(12, 1fr);
-  align-items: start;
 }
 .panel {
   background: var(--panel);
@@ -105,10 +104,7 @@ body {
 .h2-glyph { color: var(--cyan-dim); margin-right: 6px; }
 .tag { font-size: 10px; color: var(--amber); border: 1px solid var(--amber); border-radius: 3px; padding: 1px 6px; letter-spacing: 1px; }
 .panel-note { margin-top: 8px; font-size: 11px; color: var(--dim); }
-.vitals { grid-column: span 5; }
-.procs { grid-column: span 4; }
-.collectors { grid-column: span 3; }
-.console-panel { grid-column: span 12; }
+.vitals { grid-column: span 6; }
 
 /* gauges */
 .gauges { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
@@ -130,14 +126,11 @@ body {
 .proc-head { color: var(--dim); font-size: 10px; letter-spacing: 1px; }
 
 /* collectors */
-.coll-row { display: grid; grid-template-columns: auto 1fr auto; gap: 4px 10px; align-items: baseline; padding: 5px 0; border-bottom: 1px dotted rgba(14,58,77,0.7); font-size: 12px; }
-.coll-name { color: var(--text); letter-spacing: 1px; }
 .coll-status { font-size: 10px; letter-spacing: 2px; padding: 2px 8px; border: 1px solid; border-radius: 3px; }
 .coll-status.live { color: var(--green); border-color: var(--green); }
 .coll-status.starting { color: var(--amber); border-color: var(--amber); }
 .coll-status.stubbed, .coll-status.waiting { color: var(--dim); border-color: var(--dim); }
 .coll-status.error { color: var(--red); border-color: var(--red); }
-.coll-note { font-size: 10px; color: var(--dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* sound */
 .sound-row { display: flex; align-items: center; gap: 22px; margin-bottom: 10px; }
@@ -186,7 +179,7 @@ select.btn { appearance: none; }
 .foot { padding: 10px 18px 16px; font-size: 11px; }
 
 @media (max-width: 1100px) {
-  .vitals, .procs, .collectors, .console-panel { grid-column: span 12; }
+  .vitals, .right-stack { grid-column: span 12; }
 }
 
 /* clickable gauges + trend scope (added Oct 9) */
@@ -286,3 +279,25 @@ body.light .rain-wrap { background: rgba(255,255,255,0.55); }
 .console-modal { height: 54vh; }
 .ev-flash { animation: evflash 2.4s ease-out; }
 @keyframes evflash { 0% { background: rgba(53,224,255,0.35); } 100% { background: transparent; } }
+
+/* right stack: constellation over event console, equal halves (added Oct 11) */
+.right-stack { grid-column: span 6; display: flex; flex-direction: column; gap: 12px; min-height: 0; }
+.right-stack .panel { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; }
+.right-stack .panel h2, .right-stack .panel .panel-note, .right-stack .console-controls { flex: none; }
+.panel.procs #proc-graph { flex: 1 1 0; min-height: 170px; height: auto; }
+.panel.procs.show-table #proc-list { display: block; flex: 1 1 0; min-height: 0; overflow-y: auto; }
+.console-panel .rain-wrap { flex: 1 1 0; min-height: 170px; height: auto; }
+
+/* data uplinks fixed bottom bar (added Oct 11) */
+body { padding-bottom: 48px; }
+.uplink-bar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 90;
+  display: flex; align-items: center; gap: 16px;
+  padding: 7px 18px;
+  background: var(--panel); border-top: 1px solid var(--line);
+  font-size: 11px; white-space: nowrap;
+}
+.uplink-title { font-size: 11px; letter-spacing: 3px; color: var(--cyan); font-weight: 600; }
+.uplink-items { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+.up-item { display: inline-flex; align-items: center; gap: 7px; }
+.up-name { letter-spacing: 1px; color: var(--text); }

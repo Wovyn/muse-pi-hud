@@ -1,8 +1,9 @@
 # muse-pi-hud
 
-A real-time, sci-fi "spaceship" mission dashboard for Raspberry Pi: hardware
-vitals, live sensor trends, a scrolling color-coded event console, an animated
-process constellation, and synthesized beeps & boops. A **Wovyn R&D project**.
+A real-time, sci-fi "spaceship" HUD for Raspberry Pi — the **Muse Gadget HUD**:
+hardware vitals, live sensor trends, a Matrix-style telemetry-rain event
+console, an animated process constellation, and synthesized beeps & boops.
+A **Wovyn R&D project**.
 
 Built for Muse-Pi-1 (Raspberry Pi 4, Debian 13). Runs as an unprivileged user
 with no sudo, survives reboots via a user `@reboot` cron entry. Hand-rolled —
@@ -102,9 +103,15 @@ Design rules for new collectors:
 - The PROCESSES CONSTELLATION panel renders top processes as a force-directed
   graph: node size ~ CPU activity, hue ~ memory, edges = parent→child (ppid),
   with always-on name labels and rich hover tooltips.
-- The event console scrolls live with pause, scroll-lock, severity filter,
-  clear, and detail lines for audit entries (shell commands with `$` prefix,
-  file paths, durations, byte counts).
+- Layout: Gadget Vitals takes the left half of the page; the right half stacks
+  the Process Constellation over the Event Console in equal halves. Data
+  Uplinks live in a slim bar pinned to the bottom of the viewport.
+- The EVENT CONSOLE is a Matrix-style "telemetry rain": one lane per event
+  category, each event falling as a severity-colored glyph. Hover a glyph for
+  timestamp/source/summary; click to open the chronological detail modal
+  (newest first). Pause, scroll-lock, severity filter, and clear carry over,
+  and detail lines for audit entries (shell commands with `$` prefix, file
+  paths, durations, byte counts) are preserved in the modal.
 - Sounds are synthesized with WebAudio (no audio files): master toggle,
   per-category toggles, and volume.
 - Light mode ("day shift") toggle in the header restyles all charts in place.

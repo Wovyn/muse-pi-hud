@@ -180,12 +180,12 @@ function openEventModal(flashId) {
   eventModalOpen = true;
   var box = document.getElementById('console-modal');
   box.innerHTML = '';
-  var rows = evBuf.slice(-300), i;
+  var rows = evBuf.slice(-300).reverse(), i;
   for (i = 0; i < rows.length; i++) box.appendChild(buildEvRow(rows[i]));
   if (!rows.length) box.innerHTML = '<div class="dim">no events yet</div>';
   document.getElementById('ev-modal-count').textContent = Console_.count + ' events';
   document.getElementById('event-overlay').classList.remove('hidden');
-  box.scrollTop = box.scrollHeight;
+  box.scrollTop = 0;
   if (flashId) {
     var row = box.querySelector('[data-eid="' + flashId + '"]');
     if (row) { row.scrollIntoView({ block: 'center' }); row.classList.add('ev-flash'); }
@@ -200,9 +200,9 @@ function appendModalRow(ev) {
   if (!box) return;
   var ph = box.querySelector('.dim');
   if (ph) ph.remove();
-  box.appendChild(buildEvRow(ev));
-  while (box.children.length > 300) box.removeChild(box.firstChild);
-  if (Console_.lock) box.scrollTop = box.scrollHeight;
+  box.insertBefore(buildEvRow(ev), box.firstChild);
+  while (box.children.length > 300) box.removeChild(box.lastChild);
+  if (Console_.lock) box.scrollTop = 0;
 }
 document.getElementById('event-modal-close').addEventListener('click', closeEventModal);
 document.getElementById('event-overlay').addEventListener('click', function (e) {
@@ -274,7 +274,7 @@ function spawnGlyph(ev) {
   glyphs.push({
     ev: ev, lane: lane,
     x: lane.cx + (Math.random() - 0.5) * Math.max((lane.x1 - lane.x0) * 0.55, 8),
-    y: -14, vy: 55 + Math.random() * 75,
+    y: -14, vy: 25 + Math.random() * 35,
     chars: chars, color: sevColor(ev.severity)
   });
   if (glyphs.length > RAIN_MAX) glyphs.splice(0, glyphs.length - RAIN_MAX);
@@ -703,16 +703,15 @@ function renderSnapshot(snap) {
     pl.innerHTML = html;
     renderProcGraph(p.top);
   }
-  // collector uplinks
-  var cl = document.getElementById('collector-list'), ch = '';
+  // collector uplinks -> fixed bottom bar, horizontal items
+  var ul = document.getElementById('uplink-items'), ch = '';
   Object.keys(cols).forEach(function (name) {
     var c = cols[name];
-    ch += '<div class="coll-row"><span class="coll-name">' + escapeHtml(name) + '</span>' +
-      '<span class="coll-note"' + (c.note ? ' title="' + escapeHtml(c.note) + '"' : '') + '>' +
-      escapeHtml(shortNote(c.note)) + '</span>' +
-      '<span class="coll-status ' + escapeHtml(c.status) + '">' + escapeHtml(c.status.toUpperCase()) + '</span></div>';
+    ch += '<span class="up-item"' + (c.note ? ' title="' + escapeHtml(c.note) + '"' : '') + '>' +
+      '<span class="up-name">' + escapeHtml(name) + '</span>' +
+      '<span class="coll-status ' + escapeHtml(c.status) + '">' + escapeHtml(c.status.toUpperCase()) + '</span></span>';
   });
-  if (ch) cl.innerHTML = ch;
+  if (ch) ul.innerHTML = ch;
 }
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, function (c) {

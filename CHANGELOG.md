@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-10-11
+
+### Changed
+- Header: the hamburger menu is now the far-right control (after theme,
+  clock, and link status).
+- Data Uplinks moved out of the main grid into a slim bar pinned to the
+  bottom of the viewport; collectors render horizontally (name + status
+  tag, full note on hover).
+- Layout: Gadget Vitals takes the left 50%; the right 50% stacks the Process
+  Constellation over the Event Console in equal halves. Both visualizations
+  flex to fill their panels.
+- Telemetry rain slowed to roughly half speed.
+- Event lists are newest-first: the detail modal prepends new rows and pins
+  to the top (scroll-lock follows the newest).
+
 ## [1.3.0] - 2026-10-11
 
 ### Added
