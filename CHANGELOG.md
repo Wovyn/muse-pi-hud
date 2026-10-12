@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-10-11
+
+### Added
+- SWAP and AVAIL readouts alongside LOAD/UPTIME/PROCS. The vitals collector
+  now reports `avail_kb` (MemAvailable) and swap totals/usage from
+  `/proc/meminfo`; SWAP shows percent used with GB detail on hover, AVAIL
+  shows usable headroom in GB. Swap is the early-warning canary for memory
+  pressure on this host.
+
 ## [1.2.0] - 2026-10-11
 
 ### Changed

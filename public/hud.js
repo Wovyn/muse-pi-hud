@@ -656,6 +656,17 @@ function renderSnapshot(snap) {
   if (w.disk) { setGauge('g-disk', w.disk.pct); Hist.push('disk', w.disk.pct); }
   document.getElementById('r-load').textContent = w.load ? w.load.join(' ') : '—';
   document.getElementById('r-uptime').textContent = fmtUptime(w.uptime_s);
+  var mem0 = w.mem || {};
+  var swapEl = document.getElementById('r-swap');
+  if (mem0.swap_total_kb) {
+    swapEl.textContent = mem0.swap_pct.toFixed(0) + '%';
+    swapEl.title = (mem0.swap_used_kb / 1048576).toFixed(2) + ' / ' + (mem0.swap_total_kb / 1048576).toFixed(1) + ' GB';
+  } else { swapEl.textContent = '—'; swapEl.title = 'no swap configured'; }
+  var availEl = document.getElementById('r-avail');
+  if (mem0.avail_kb) {
+    availEl.textContent = (mem0.avail_kb / 1048576).toFixed(1) + ' GB';
+    availEl.title = 'MemAvailable — usable without swapping';
+  } else { availEl.textContent = '—'; availEl.title = ''; }
   // network
   var n = (cols.network && cols.network.data) || {};
   if (n.total) {

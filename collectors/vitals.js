@@ -47,9 +47,15 @@ function memInfo() {
     if (m) vals[m[1]] = +m[2];
   }
   const total = vals.MemTotal || 0, avail = vals.MemAvailable || 0;
-  return { total_kb: total, used_kb: total - avail, pct: total ? ((total - avail) / total) * 100 : 0 };
-}
-function socTemp() {
+  const stotal = vals.SwapTotal || 0, sfree = vals.SwapFree || 0;
+  const sused = stotal - sfree;
+  return {
+    total_kb: total, used_kb: total - avail, avail_kb: avail,
+    pct: total ? ((total - avail) / total) * 100 : 0,
+    swap_total_kb: stotal, swap_used_kb: sused,
+    swap_pct: stotal ? (sused / stotal) * 100 : 0
+  };
+}function socTemp() {
   const t = read('/sys/class/thermal/thermal_zone0/temp');
   return t ? parseFloat(t) / 1000 : null;
 }
