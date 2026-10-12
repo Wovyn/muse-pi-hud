@@ -98,37 +98,58 @@ function auditDetail(ev) {
   return { short: full.length > 170 ? full.slice(0, 167) + '…' : full, full: full };
 }
 
-/* ---------- event console ---------- */
+/* ---------- event console: telemetry rain + chronological detail modal ---------- */
+var evBuf = [];
+var EV_BUF_MAX = 600;
+
+function buildEvRow(ev) {
+  var row = document.createElement('div');
+  row.className = 'ev sev-' + (ev.severity || 'info');
+  row.setAttribute('data-eid', ev._id);
+  var ts = document.createElement('span'); ts.className = 'ts';
+  ts.textContent = (ev.t || '').slice(11, 19) + ' ';
+  var tag = document.createElement('span'); tag.className = 'src cat-' + (ev.category || 'system');
+  tag.textContent = '[' + (ev.source || '?') + '/' + (ev.category || 'system') + '] ';
+  var msg = document.createElement('span'); msg.textContent = ev.message || '';
+  row.appendChild(ts); row.appendChild(tag); row.appendChild(msg);
+  var det = auditDetail(ev);
+  if (det) {
+    var dEl = document.createElement('div');
+    dEl.className = 'ev-detail';
+    dEl.textContent = det.short;
+    if (det.full !== det.short) dEl.title = det.full;
+    row.appendChild(dEl);
+  }
+  return row;
+}
+
 var Console_ = {
-  el: document.getElementById('console'),
   paused: store.get('con.paused', false), lock: store.get('con.lock', true),
   minSev: store.get('con.sev', 'info'), count: 0,
   add: function (ev) {
     if (SEV_RANK[ev.severity || 'info'] < SEV_RANK[this.minSev]) return;
     this.count++;
-    var row = document.createElement('div');
-    row.className = 'ev sev-' + (ev.severity || 'info');
-    var ts = document.createElement('span'); ts.className = 'ts';
-    ts.textContent = (ev.t || '').slice(11, 19) + ' ';
-    var tag = document.createElement('span'); tag.className = 'src cat-' + (ev.category || 'system');
-    tag.textContent = '[' + (ev.source || '?') + '/' + (ev.category || 'system') + '] ';
-    var msg = document.createElement('span'); msg.textContent = ev.message || '';
-    row.appendChild(ts); row.appendChild(tag); row.appendChild(msg);
-    var det = auditDetail(ev);
-    if (det) {
-      var dEl = document.createElement('div');
-      dEl.className = 'ev-detail';
-      dEl.textContent = det.short;
-      if (det.full !== det.short) dEl.title = det.full;
-      row.appendChild(dEl);
-    }
-    this.el.appendChild(row);
-    while (this.el.children.length > 300) this.el.removeChild(this.el.firstChild);
-    if (!this.paused && this.lock) this.el.scrollTop = this.el.scrollHeight;
+    ev._id = this.count;
+    evBuf.push(ev);
+    if (evBuf.length > EV_BUF_MAX) evBuf.splice(0, evBuf.length - EV_BUF_MAX);
     document.getElementById('ev-count').textContent = this.count + ' events';
+    var empty = document.getElementById('rain-empty');
+    if (empty) empty.style.display = 'none';
     Sound.play(ev.category || 'system', ev.severity || 'info');
+    spawnGlyph(ev);
+    if (reduceMotion) renderRainFallback();
+    if (eventModalOpen) appendModalRow(ev);
   },
-  clear: function () { this.el.innerHTML = ''; },
+  clear: function () {
+    evBuf = [];
+    glyphs = [];
+    this.count = 0;
+    document.getElementById('ev-count').textContent = '0 events';
+    var empty = document.getElementById('rain-empty');
+    if (empty) empty.style.display = 'flex';
+    if (eventModalOpen) document.getElementById('console-modal').innerHTML = '<div class="dim">no events yet</div>';
+    if (reduceMotion) renderRainFallback();
+  },
 };
 function syncConsoleControls() {
   var p = document.getElementById('btn-pause');
@@ -152,6 +173,214 @@ document.getElementById('sev-filter').addEventListener('change', function () {
   store.set('con.sev', this.value);
 });
 document.getElementById('btn-clear').addEventListener('click', function () { Console_.clear(); });
+
+/* ----- chronological detail modal ----- */
+var eventModalOpen = false;
+function openEventModal(flashId) {
+  eventModalOpen = true;
+  var box = document.getElementById('console-modal');
+  box.innerHTML = '';
+  var rows = evBuf.slice(-300), i;
+  for (i = 0; i < rows.length; i++) box.appendChild(buildEvRow(rows[i]));
+  if (!rows.length) box.innerHTML = '<div class="dim">no events yet</div>';
+  document.getElementById('ev-modal-count').textContent = Console_.count + ' events';
+  document.getElementById('event-overlay').classList.remove('hidden');
+  box.scrollTop = box.scrollHeight;
+  if (flashId) {
+    var row = box.querySelector('[data-eid="' + flashId + '"]');
+    if (row) { row.scrollIntoView({ block: 'center' }); row.classList.add('ev-flash'); }
+  }
+}
+function closeEventModal() {
+  eventModalOpen = false;
+  document.getElementById('event-overlay').classList.add('hidden');
+}
+function appendModalRow(ev) {
+  var box = document.getElementById('console-modal');
+  if (!box) return;
+  var ph = box.querySelector('.dim');
+  if (ph) ph.remove();
+  box.appendChild(buildEvRow(ev));
+  while (box.children.length > 300) box.removeChild(box.firstChild);
+  if (Console_.lock) box.scrollTop = box.scrollHeight;
+}
+document.getElementById('event-modal-close').addEventListener('click', closeEventModal);
+document.getElementById('event-overlay').addEventListener('click', function (e) {
+  if (e.target === this) closeEventModal();
+});
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'Escape' && eventModalOpen) closeEventModal();
+});
+
+/* ----- telemetry rain ----- */
+var rainC = document.getElementById('rain');
+var rctx = rainC.getContext('2d');
+var glyphs = [];
+var rainLanes = [];
+var hoverGlyph = null;
+var reduceMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+var RAIN_MAX = 220;
+var GLYPH_CHARS = '\u30a2\u30a4\u30a6\u30a8\u30aa\u30ab\u30ad\u30af\u30b1\u30b3\u30b5\u30b7\u30b9\u30bb\u30bd0123456789';
+var rainW = 0, rainH = 0, lastTick = 0;
+
+function isLight() { return document.body.classList.contains('light'); }
+function sevColor(sev) {
+  var light = isLight();
+  if (sev === 'error') return light ? '#c42b2b' : '#ff5d5d';
+  if (sev === 'warn') return light ? '#9a6200' : '#ffb347';
+  return light ? '#0a7d99' : '#35e0ff';
+}
+function laneFor(cat) {
+  cat = String(cat || 'system');
+  var i;
+  for (i = 0; i < rainLanes.length; i++) if (rainLanes[i].key === cat) return rainLanes[i];
+  var lane;
+  if (rainLanes.length >= 8) {
+    for (i = 0; i < rainLanes.length; i++) if (rainLanes[i].key === 'misc') return rainLanes[i];
+    lane = { key: 'misc', label: 'misc' };
+  } else {
+    lane = { key: cat, label: cat };
+  }
+  rainLanes.push(lane);
+  rainLanes.sort(function (a, b) {
+    var ia = CATS.indexOf(a.key), ib = CATS.indexOf(b.key);
+    return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
+  });
+  layoutRain();
+  return lane;
+}
+function layoutRain() {
+  if (!rainC || reduceMotion) return;
+  var r = rainC.getBoundingClientRect();
+  var dpr = window.devicePixelRatio || 1;
+  rainW = Math.max(60, r.width);
+  rainH = Math.max(60, r.height);
+  rainC.width = Math.round(rainW * dpr);
+  rainC.height = Math.round(rainH * dpr);
+  rctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  var n = Math.max(rainLanes.length, 1), w = rainW / n, i;
+  for (i = 0; i < rainLanes.length; i++) {
+    rainLanes[i].x0 = i * w;
+    rainLanes[i].x1 = (i + 1) * w;
+    rainLanes[i].cx = i * w + w / 2;
+  }
+}
+function rnd(n) { return Math.floor(Math.random() * n); }
+function spawnGlyph(ev) {
+  if (reduceMotion || !rainC) return;
+  var lane = laneFor(ev.category);
+  var chars = [], i;
+  for (i = 0; i < 4; i++) chars.push(GLYPH_CHARS[rnd(GLYPH_CHARS.length)]);
+  glyphs.push({
+    ev: ev, lane: lane,
+    x: lane.cx + (Math.random() - 0.5) * Math.max((lane.x1 - lane.x0) * 0.55, 8),
+    y: -14, vy: 55 + Math.random() * 75,
+    chars: chars, color: sevColor(ev.severity)
+  });
+  if (glyphs.length > RAIN_MAX) glyphs.splice(0, glyphs.length - RAIN_MAX);
+}
+function tickRain(now) {
+  requestAnimationFrame(tickRain);
+  now = now || performance.now();
+  var dt = Math.min(((now - lastTick) / 1000) || 0, 0.05);
+  lastTick = now;
+  if (rainW < 10) layoutRain();
+  if (rainW < 10) return;
+  var frozen = Console_.paused || document.hidden;
+  var i, k, g, L;
+  rctx.clearRect(0, 0, rainW, rainH);
+  rctx.textAlign = 'center';
+  rctx.font = '10px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
+  for (i = 0; i < rainLanes.length; i++) {
+    L = rainLanes[i];
+    rctx.strokeStyle = isLight() ? 'rgba(10,125,153,0.20)' : 'rgba(53,224,255,0.10)';
+    rctx.beginPath();
+    rctx.moveTo(L.x0 + 0.5, 16); rctx.lineTo(L.x0 + 0.5, rainH);
+    rctx.stroke();
+    rctx.fillStyle = (PAL.cat && PAL.cat[L.key]) || (isLight() ? '#3c6070' : '#8cbecd');
+    rctx.fillText(L.label.toUpperCase(), L.cx, 12);
+  }
+  if (!frozen) {
+    for (i = glyphs.length - 1; i >= 0; i--) {
+      g = glyphs[i];
+      g.y += g.vy * dt;
+      if (g.y - g.chars.length * 15 > rainH) {
+        if (hoverGlyph === g) setHover(null);
+        glyphs.splice(i, 1);
+      }
+    }
+  }
+  rctx.font = '13px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
+  for (i = 0; i < glyphs.length; i++) {
+    g = glyphs[i];
+    var dimf = (hoverGlyph && hoverGlyph !== g) ? 0.22 : 1;
+    for (k = 0; k < g.chars.length; k++) {
+      var yy = g.y - k * 15;
+      if (yy < -18 || yy > rainH + 18) continue;
+      rctx.globalAlpha = Math.max((k === 0 ? 1 : 0.52 - k * 0.13), 0.05) * dimf;
+      rctx.fillStyle = g.color;
+      rctx.fillText(g.chars[k], g.x, yy);
+    }
+  }
+  rctx.globalAlpha = 1;
+}
+function setHover(g, evt) {
+  hoverGlyph = g;
+  var tip = document.getElementById('rain-tip');
+  if (!g) { tip.classList.add('hidden'); rainC.style.cursor = 'crosshair'; return; }
+  var ev = g.ev;
+  tip.innerHTML = '<b>' + escapeHtml(ev.source || '?') + '</b> \u00b7 ' + escapeHtml(ev.severity || 'info') + '<br>' +
+    '<span class="dim">' + escapeHtml((ev.t || '').slice(11, 19) + ' \u00b7 ' + (ev.category || '')) + '</span><br>' +
+    escapeHtml(String(ev.message || '').slice(0, 160));
+  tip.classList.remove('hidden');
+  rainC.style.cursor = 'pointer';
+  if (evt) {
+    var r = rainC.getBoundingClientRect();
+    tip.style.left = Math.max(4, Math.min(evt.clientX - r.left + 16, r.width - 240)) + 'px';
+    tip.style.top = Math.max(4, Math.min(evt.clientY - r.top + 16, r.height - 100)) + 'px';
+  }
+}
+if (rainC) {
+  rainC.addEventListener('mousemove', function (e) {
+    var r = rainC.getBoundingClientRect();
+    var mx = e.clientX - r.left, my = e.clientY - r.top;
+    var best = null, bd = 20, i, g;
+    for (i = 0; i < glyphs.length; i++) {
+      g = glyphs[i];
+      var d = Math.hypot(g.x - mx, g.y - my);
+      if (d < bd) { bd = d; best = g; }
+    }
+    setHover(best, e);
+  });
+  rainC.addEventListener('mouseleave', function () { setHover(null); });
+  rainC.addEventListener('click', function () {
+    openEventModal(hoverGlyph && hoverGlyph.ev ? hoverGlyph.ev._id : 0);
+  });
+}
+function renderRainFallback() {
+  var fb = document.getElementById('rain-fallback');
+  if (!fb) return;
+  fb.innerHTML = '';
+  var rows = evBuf.slice(-25).reverse(), i;
+  for (i = 0; i < rows.length; i++) fb.appendChild(buildEvRow(rows[i]));
+  if (!rows.length) fb.innerHTML = '<div class="dim">no events yet</div>';
+}
+
+/* ----- rain boot ----- */
+(function initRain() {
+  var i;
+  for (i = 0; i < CATS.length; i++) rainLanes.push({ key: CATS[i], label: CATS[i] });
+  if (reduceMotion) {
+    rainC.style.display = 'none';
+    document.getElementById('rain-fallback').classList.remove('hidden');
+    renderRainFallback();
+  } else {
+    layoutRain();
+    window.addEventListener('resize', layoutRain);
+    requestAnimationFrame(tickRain);
+  }
+})();
+
 document.getElementById('btn-theme').addEventListener('click', function () {
   applyTheme(document.body.classList.contains('light') ? 'dark' : 'light', false);
 });

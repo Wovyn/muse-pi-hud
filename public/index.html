@@ -69,7 +69,13 @@
       <button id="btn-clear" class="btn" title="clear the console view">CLEAR</button>
       <span id="ev-count" class="dim ev-count">0 events</span>
     </div>
-    <div id="console" class="console"></div>
+    <div class="rain-wrap">
+      <canvas id="rain"></canvas>
+      <div id="rain-fallback" class="hidden"></div>
+      <div id="rain-tip" class="rain-tip hidden"></div>
+      <div id="rain-empty" class="rain-empty"><span class="dim">awaiting events — hover a glyph for details, click for the full log</span></div>
+    </div>
+    <div class="panel-note">hover a glyph for details — click the rain to open the chronological log</div>
   </section>
 </main>
 
@@ -90,6 +96,17 @@
       </section>
     </div>
     <button id="modal-close" class="modal-close" title="close">&times;</button>
+  </div>
+</div>
+
+<div id="event-overlay" class="modal-overlay hidden">
+  <div class="modal modal-wide" role="dialog" aria-label="Event log">
+    <div class="modal-body">
+      <h3>EVENT LOG <span class="tag">chronological</span> <span id="ev-modal-count" class="dim ev-count"></span></h3>
+      <div class="panel-note">pause, scroll-lock, and severity follow the panel controls</div>
+      <div id="console-modal" class="console console-modal"></div>
+    </div>
+    <button id="event-modal-close" class="modal-close" title="close">&times;</button>
   </div>
 </div>
 

@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-10-11
+
+### Changed
+- Event Console redesigned as a Matrix-style "telemetry rain": one vertical
+  lane per event category (system, sensor, command, network, app), each event
+  falling as a severity-colored glyph with a fading trail. Hovering a glyph
+  shows timestamp/source/summary; clicking opens a chronological detail modal
+  with the full event log. Pause, scroll-lock (modal follow), severity
+  filter, and clear carry over from the panel controls. The event buffer
+  holds 600 events; the rain caps at 220 glyphs and renders on canvas.
+  `prefers-reduced-motion` falls back to a static recent-events list;
+  light-mode palette included.
+
 ## [1.1.0] - 2026-10-11
 
 ### Fixed

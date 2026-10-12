@@ -186,7 +186,7 @@ select.btn { appearance: none; }
 .foot { padding: 10px 18px 16px; font-size: 11px; }
 
 @media (max-width: 1100px) {
-  .vitals, .procs, .collectors, .sound, .console-panel { grid-column: span 12; }
+  .vitals, .procs, .collectors, .console-panel { grid-column: span 12; }
 }
 
 /* clickable gauges + trend scope (added Oct 9) */
@@ -271,3 +271,18 @@ body.light .modal { box-shadow: 0 8px 40px rgba(20,60,80,0.25); }
 body.light .modal-nav { background: rgba(10,125,153,0.06); }
 body.light .view-toggle button.active { background: rgba(10,125,153,0.10); }
 body.light .menu-item:hover { background: rgba(10,125,153,0.08); }
+
+/* telemetry rain event console (added Oct 11) */
+.rain-wrap { position: relative; height: 300px; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; background: rgba(2,10,16,0.45); }
+body.light .rain-wrap { background: rgba(255,255,255,0.55); }
+#rain { display: block; width: 100%; height: 100%; cursor: crosshair; }
+.rain-tip { position: absolute; z-index: 5; max-width: 240px; pointer-events: none; background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 8px 10px; font-size: 11px; line-height: 1.55; box-shadow: 0 4px 16px rgba(0,0,0,0.5); }
+.rain-tip.hidden { display: none; }
+.rain-tip b { color: var(--cyan); letter-spacing: 1px; }
+.rain-empty { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; text-align: center; padding: 0 20px; }
+#rain-fallback { position: absolute; inset: 0; overflow-y: auto; padding: 8px; }
+#rain-fallback.hidden { display: none; }
+.modal-wide { width: min(900px, 94vw); }
+.console-modal { height: 54vh; }
+.ev-flash { animation: evflash 2.4s ease-out; }
+@keyframes evflash { 0% { background: rgba(53,224,255,0.35); } 100% { background: transparent; } }
