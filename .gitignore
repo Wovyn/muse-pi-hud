@@ -1,0 +1,9 @@
+# Runtime artifacts (created by start.sh / node, never committed)
+hud.log
+hud.pid
+node_modules/
+
+# Editor / OS noise
+.DS_Store
+*.swp
+*~

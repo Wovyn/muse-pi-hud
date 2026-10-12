@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MUSE-PI-1 // HUD</title>
+<link rel="stylesheet" href="hud.css">
+</head>
+<body>
+<div class="scanlines"></div>
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark">&#9673;</span>
+    <span class="brand-name">MUSE-PI-1 <span class="dim">// MISSION HUD</span></span>
+  </div>
+  <div class="topbar-right">
+    <button id="btn-theme" class="btn" title="toggle light / dark mode">&#9788; LIGHT</button>
+    <span id="clock" class="clock">--:--:--</span>
+    <span id="ws-status" class="ws-status offline" title="websocket link">LINK: OFFLINE</span>
+  </div>
+</header>
+
+<main class="grid">
+  <section class="panel vitals">
+    <h2><span class="h2-glyph">&#9638;</span> SHIP VITALS</h2>
+    <div class="gauges">
+      <div class="gauge" data-metric="cpu"><div id="g-cpu" class="gauge-chart"></div><div class="gauge-label">CPU</div></div>
+      <div class="gauge" data-metric="mem"><div id="g-mem" class="gauge-chart"></div><div class="gauge-label">MEM</div></div>
+      <div class="gauge" data-metric="temp"><div id="g-temp" class="gauge-chart"></div><div class="gauge-label">SoC TEMP</div></div>
+      <div class="gauge" data-metric="disk"><div id="g-disk" class="gauge-chart"></div><div class="gauge-label">DISK</div></div>
+      <div class="gauge" data-metric="netrx"><div id="g-netrx" class="gauge-chart"></div><div class="gauge-label">NET RX</div></div>
+      <div class="gauge" data-metric="nettx"><div id="g-nettx" class="gauge-chart"></div><div class="gauge-label">NET TX</div></div>
+    </div>
+    <div class="panel-note">click any gauge to retarget the trend scope</div>
+    <div class="vitals-wide"><div id="trend-chart" class="trend-chart"></div><div class="gauge-label" id="trend-label">TREND // CPU</div></div>
+    <div class="readouts">
+      <div class="readout"><span class="k">LOAD</span><span id="r-load" class="v">—</span></div>
+      <div class="readout"><span class="k">UPTIME</span><span id="r-uptime" class="v">—</span></div>
+      <div class="readout"><span class="k">PROCS</span><span id="r-procs" class="v">—</span></div>
+    </div>
+  </section>
+
+  <section class="panel procs">
+    <h2><span class="h2-glyph">&#9638;</span> PROCESS CONSTELLATION</h2>
+    <div id="proc-graph" class="proc-graph"></div>
+    <div id="proc-list" class="proc-list"><div class="dim">awaiting telemetry…</div></div>
+    <div class="panel-note">nodes drift on live CPU — size ~ activity, hue ~ memory, links = parent&rarr;child</div>
+  </section>
+
+  <section class="panel collectors">
+    <h2><span class="h2-glyph">&#9638;</span> DATA UPLINKS</h2>
+    <div id="collector-list" class="collector-list"><div class="dim">awaiting telemetry…</div></div>
+  </section>
+
+  <section class="panel sound">
+    <h2><span class="h2-glyph">&#9638;</span> AUDIO <span class="tag">beeps &amp; boops</span></h2>
+    <div class="sound-row">
+      <label class="switch"><input type="checkbox" id="snd-master" checked><span class="track"></span>MASTER</label>
+      <label class="vol">VOL <input type="range" id="snd-vol" min="0" max="100" value="50"></label>
+    </div>
+    <div id="snd-cats" class="sound-cats"></div>
+    <div class="panel-note">Audio starts after first click (browser policy). Synthesized live — no audio files.</div>
+  </section>
+
+  <section class="panel console-panel">
+    <h2><span class="h2-glyph">&#9638;</span> EVENT CONSOLE</h2>
+    <div class="console-controls">
+      <button id="btn-pause" class="btn" title="freeze the scrolling feed">PAUSE</button>
+      <button id="btn-lock" class="btn active" title="pin to newest events">SCROLL-LOCK</button>
+      <select id="sev-filter" class="btn" title="minimum severity">
+        <option value="info">INFO+</option>
+        <option value="warn">WARN+</option>
+        <option value="error">ERROR</option>
+      </select>
+      <button id="btn-clear" class="btn" title="clear the console view">CLEAR</button>
+      <span id="ev-count" class="dim ev-count">0 events</span>
+    </div>
+    <div id="console" class="console"></div>
+  </section>
+</main>
+
+<footer class="foot">
+  <span class="dim">MUSE-PI-1 HUD // collectors: vitals, processes, network, mqtt(stub), audit(waiting)</span>
+</footer>
+
+<script src="vendor/echarts.min.js"></script>
+<script src="hud.js"></script>
+</body>
+</html>

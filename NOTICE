@@ -1,0 +1,20 @@
+muse-pi-hud
+Copyright 2026 Wovyn, LLC
+
+This product is a Wovyn R&D project. Project concept, requirements, and
+specifications by Scott; implementation by MuseCell-1.
+
+This product includes software developed by third parties:
+
+- Apache ECharts (https://echarts.apache.org/)
+  Copyright The Apache Software Foundation.
+  Licensed under the Apache License, Version 2.0.
+  Vendored at public/vendor/echarts.min.js.
+
+- ws — simple, fast WebSocket client and server for Node.js
+  (https://github.com/websockets/ws), version 8.22.0
+  Copyright (c) 2011 Einar Otto Stangvik <einaros@gmail.com>
+  Copyright (c) 2013 Arnout Kazemier and contributors
+  Copyright (c) 2016 Luigi Pinca and contributors
+  Licensed under the MIT License.
+  Installed via npm; not committed to this repo.
