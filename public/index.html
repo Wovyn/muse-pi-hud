@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>MUSE-PI-1 // HUD</title>
+<title>MUSE-PI-1 // MUSE GADGET HUD</title>
 <link rel="stylesheet" href="hud.css">
 </head>
 <body>
@@ -11,18 +11,22 @@
 <header class="topbar">
   <div class="brand">
     <span class="brand-mark">&#9673;</span>
-    <span class="brand-name">MUSE-PI-1 <span class="dim">// MISSION HUD</span></span>
+    <span class="brand-name">MUSE-PI-1 <span class="dim">// MUSE GADGET HUD</span></span>
   </div>
   <div class="topbar-right">
+    <button id="btn-menu" class="btn btn-menu" title="menu">&#9776;</button>
     <button id="btn-theme" class="btn" title="toggle light / dark mode">&#9788; LIGHT</button>
     <span id="clock" class="clock">--:--:--</span>
     <span id="ws-status" class="ws-status offline" title="websocket link">LINK: OFFLINE</span>
+  </div>
+  <div id="menu" class="menu hidden">
+    <button id="menu-settings" class="menu-item">Settings</button>
   </div>
 </header>
 
 <main class="grid">
   <section class="panel vitals">
-    <h2><span class="h2-glyph">&#9638;</span> SHIP VITALS</h2>
+    <h2><span class="h2-glyph">&#9638;</span> GADGET VITALS</h2>
     <div class="gauges">
       <div class="gauge" data-metric="cpu"><div id="g-cpu" class="gauge-chart"></div><div class="gauge-label">CPU</div></div>
       <div class="gauge" data-metric="mem"><div id="g-mem" class="gauge-chart"></div><div class="gauge-label">MEM</div></div>
@@ -41,7 +45,7 @@
   </section>
 
   <section class="panel procs">
-    <h2><span class="h2-glyph">&#9638;</span> PROCESS CONSTELLATION</h2>
+    <h2><span class="h2-glyph">&#9638;</span> PROCESS CONSTELLATION <span class="view-toggle"><button data-view="graph" class="active">GRAPH</button><button data-view="table">TABLE</button></span></h2>
     <div id="proc-graph" class="proc-graph"></div>
     <div id="proc-list" class="proc-list"><div class="dim">awaiting telemetry…</div></div>
     <div class="panel-note">nodes drift on live CPU — size ~ activity, hue ~ memory, links = parent&rarr;child</div>
@@ -50,16 +54,6 @@
   <section class="panel collectors">
     <h2><span class="h2-glyph">&#9638;</span> DATA UPLINKS</h2>
     <div id="collector-list" class="collector-list"><div class="dim">awaiting telemetry…</div></div>
-  </section>
-
-  <section class="panel sound">
-    <h2><span class="h2-glyph">&#9638;</span> AUDIO <span class="tag">beeps &amp; boops</span></h2>
-    <div class="sound-row">
-      <label class="switch"><input type="checkbox" id="snd-master" checked><span class="track"></span>MASTER</label>
-      <label class="vol">VOL <input type="range" id="snd-vol" min="0" max="100" value="50"></label>
-    </div>
-    <div id="snd-cats" class="sound-cats"></div>
-    <div class="panel-note">Audio starts after first click (browser policy). Synthesized live — no audio files.</div>
   </section>
 
   <section class="panel console-panel">
@@ -79,8 +73,28 @@
   </section>
 </main>
 
+<div id="modal-overlay" class="modal-overlay hidden">
+  <div class="modal" role="dialog" aria-label="Settings">
+    <div class="modal-nav">
+      <button class="nav-item active" data-sec="sound">Sound</button>
+    </div>
+    <div class="modal-body">
+      <section id="msec-sound" class="modal-sec">
+        <h3>AUDIO <span class="tag">beeps &amp; boops</span></h3>
+        <div class="sound-row">
+          <label class="switch"><input type="checkbox" id="snd-master" checked><span class="track"></span>MASTER</label>
+          <label class="vol">VOL <input type="range" id="snd-vol" min="0" max="100" value="50"></label>
+        </div>
+        <div id="snd-cats" class="sound-cats"></div>
+        <div class="panel-note">Audio starts after first click (browser policy). Synthesized live — no audio files.</div>
+      </section>
+    </div>
+    <button id="modal-close" class="modal-close" title="close">&times;</button>
+  </div>
+</div>
+
 <footer class="foot">
-  <span class="dim">MUSE-PI-1 HUD // collectors: vitals, processes, network, mqtt(stub), audit(waiting)</span>
+  <span class="dim">MUSE-PI-1 // MUSE GADGET HUD // collectors: vitals, processes, network, mqtt(stub), audit(waiting)</span>
 </footer>
 
 <script src="vendor/echarts.min.js"></script>

@@ -1,4 +1,4 @@
-/* MUSE-PI-1 HUD client — gauges, trend scope, process constellation,
+/* muse-pi-hud client — gauges, trend scope, process constellation,
    event console, synthesized sound engine.
    No build step. ECharts is vendored locally (vendor/echarts.min.js). */
 (function () {
@@ -410,6 +410,12 @@ function renderProcGraph(top) {
   procGraph.setOption({ series: [{ data: nodes, links: links }] });
 }
 
+/* ---------- uplink note shortening (single-row uplink layout) ---------- */
+function shortNote(n) {
+  n = String(n || '');
+  return n.length > 44 ? n.slice(0, 43) + '\u2026' : n;
+}
+
 /* ---------- snapshot -> UI ---------- */
 function renderSnapshot(snap) {
   var cols = snap.collectors || {};
@@ -462,8 +468,9 @@ function renderSnapshot(snap) {
   Object.keys(cols).forEach(function (name) {
     var c = cols[name];
     ch += '<div class="coll-row"><span class="coll-name">' + escapeHtml(name) + '</span>' +
-      '<span class="coll-status ' + escapeHtml(c.status) + '">' + escapeHtml(c.status.toUpperCase()) + '</span>' +
-      (c.note ? '<span class="coll-note">' + escapeHtml(c.note) + '</span>' : '') + '</div>';
+      '<span class="coll-note"' + (c.note ? ' title="' + escapeHtml(c.note) + '"' : '') + '>' +
+      escapeHtml(shortNote(c.note)) + '</span>' +
+      '<span class="coll-status ' + escapeHtml(c.status) + '">' + escapeHtml(c.status.toUpperCase()) + '</span></div>';
   });
   if (ch) cl.innerHTML = ch;
 }
@@ -533,6 +540,55 @@ var lastSnapshot = { collectors: {} };
 var _render = renderSnapshot;
 renderSnapshot = function (snap) { lastSnapshot = snap; _render(snap); };
 
+/* ---------- process view toggle: constellation <-> table ----------
+   Default is the constellation; the choice persists in localStorage. */
+var procView = store.get('proc.view', 'graph');
+function applyProcView() {
+  var panel = document.querySelector('.panel.procs');
+  if (panel) panel.classList.toggle('show-table', procView === 'table');
+  document.querySelectorAll('.view-toggle button').forEach(function (b) {
+    b.classList.toggle('active', b.getAttribute('data-view') === procView);
+  });
+  if (procView === 'graph' && procGraph) procGraph.resize();
+}
+document.querySelectorAll('.view-toggle button').forEach(function (b) {
+  b.addEventListener('click', function () {
+    procView = b.getAttribute('data-view');
+    store.set('proc.view', procView);
+    applyProcView();
+  });
+});
+
+/* ---------- hamburger menu + settings modal ---------- */
+(function () {
+  var menu = document.getElementById('menu');
+  var overlay = document.getElementById('modal-overlay');
+  function closeMenu() { menu.classList.add('hidden'); }
+  function openModal() { closeMenu(); overlay.classList.remove('hidden'); }
+  function closeModal() { overlay.classList.add('hidden'); }
+  document.getElementById('btn-menu').addEventListener('click', function (e) {
+    e.stopPropagation();
+    menu.classList.toggle('hidden');
+  });
+  document.addEventListener('click', function (e) {
+    if (!menu.classList.contains('hidden') && !menu.contains(e.target)) closeMenu();
+  });
+  document.getElementById('menu-settings').addEventListener('click', openModal);
+  document.getElementById('modal-close').addEventListener('click', closeModal);
+  overlay.addEventListener('click', function (e) { if (e.target === overlay) closeModal(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeModal(); });
+  document.querySelectorAll('.modal-nav .nav-item').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.querySelectorAll('.modal-nav .nav-item').forEach(function (x) { x.classList.remove('active'); });
+      b.classList.add('active');
+      var sec = b.getAttribute('data-sec');
+      document.querySelectorAll('.modal-sec').forEach(function (s) {
+        s.classList.toggle('hidden', s.id !== 'msec-' + sec);
+      });
+    });
+  });
+})();
+
 /* ---------- clock ---------- */
 setInterval(function () {
   document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-GB');
@@ -574,6 +630,7 @@ function applyTheme(mode, skipRestyle) {
 /* ---------- boot ---------- */
 applyTheme(store.get('theme', 'dark'), true);
 try { initCharts(); } catch (e) { console.error('initCharts failed:', e); }
+try { applyProcView(); } catch (e) { console.error('applyProcView failed:', e); }
 try { buildSoundControls(); } catch (e) { console.error('buildSoundControls failed:', e); }
 syncConsoleControls();
 connect();

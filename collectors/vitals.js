@@ -41,8 +41,12 @@ function cpuPct() {
 function memInfo() {
   const txt = read('/proc/meminfo');
   if (!txt) return null;
-  const g = (k) => { const m = txt.match(new RegExp('^' + k + ':\\\\s+(\\\\d+)', 'm')); return m ? +m[1] : 0; };
-  const total = g('MemTotal'), avail = g('MemAvailable');
+  const vals = {};
+  for (const line of txt.split('\n')) {
+    const m = line.match(/^(\w+):\s+(\d+)/);
+    if (m) vals[m[1]] = +m[2];
+  }
+  const total = vals.MemTotal || 0, avail = vals.MemAvailable || 0;
   return { total_kb: total, used_kb: total - avail, pct: total ? ((total - avail) / total) * 100 : 0 };
 }
 function socTemp() {

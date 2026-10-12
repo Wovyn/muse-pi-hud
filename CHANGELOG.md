@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-10-11
+
+### Fixed
+- Memory gauge/trend stuck at zero: the `memInfo()` parser in
+  `collectors/vitals.js` built its `/proc/meminfo` matcher with an
+  over-escaped dynamic regex that never matched, so `MemTotal`/`MemAvailable`
+  always read 0. Replaced with a straightforward line parser. The gauge
+  reports effective used memory (`MemTotal - MemAvailable`) as a percentage;
+  Linux also exposes `MemFree`, buffers/cache, and swap fields, but
+  `MemAvailable` is the right basis for "how much memory is actually used."
+
+### Changed
+- Renamed "Mission HUD" to "Muse Gadget HUD" and "Ship Vitals" to "Gadget
+  Vitals" (header, page title, footer).
+- Trend chart height doubled (90px to 180px).
+- Grid panels now top-align (`align-items: start`), removing the blank space
+  that stretched shorter panels to the tallest row height.
+- Data Uplinks rows now share one format: name, shortened note, status tag.
+  Full notes are available as hover tooltips; the panel sizes to its content.
+
+### Added
+- Process Constellation view toggle: GRAPH (default) / TABLE. The table lists
+  PID, command, CPU%, and MEM% sorted by CPU. The choice persists in
+  localStorage.
+- Hamburger menu (top right) with a Settings item. Settings opens a modal
+  with left-hand navigation; the Sound controls (master, volume,
+  per-category toggles) moved there from their standalone panel, and the
+  Event Console now spans the full grid width.
+
 ## [1.0.0] - 2026-10-11
 
 ### Added
