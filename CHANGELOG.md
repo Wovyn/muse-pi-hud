@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-10-16
+
+### Added
+- Ambient process sonification: each 5s processes tick diffs the top 15
+  processes; moves past the deadband play a short random-pitch blip (up:
+  1400-2600 Hz, down: 600-1100 Hz), capped at 5 blips per tick, staggered
+  over ~4s. Purely sonic — no console entries.
+- Process volume button in the Constellation header cycles Mute -> Low ->
+  Medium -> Loud -> Mute (🔇 🔈 🔉 🔊), scaling the master volume
+  (0 / 0.2 / 0.5 / 1.0); a PROCESS toggle in Settings -> Sound stays in sync
+  (unchecking mutes, rechecking restores the previous level). Landing on a
+  level plays a confirmation blip at that level; Settings has a TEST button
+  (one up-blip + one down-blip). A missing saved preference defaults to Loud.
+- Footer shows the running version (from package.json, via the hello
+  message and /api/health).
+
+### Changed
+- Softer event beeps: command info voice changed from square to triangle;
+  warn gain 0.4 -> 0.3, error gain 0.5 -> 0.35; a DynamicsCompressor on
+  the master output keeps stacked blips from clipping.
+- Process-sonification deadband is adaptive: thresholds track the 60th
+  percentile of recent non-zero moves (floors 0.3 CPU points / 1% memory),
+  so a quiet Pi still tinkles and a busy Pi does not chatter. Small moves
+  sound softer (gain scales with move size).
+- Viewport-filling layout: the page is a flex column, the grid grows to
+  fill the browser height, and the trend chart flexes to fill the Vitals
+  panel. On short screens the page scrolls rather than clipping panels.
+- ResizeObserver keeps the ECharts gauges/trend/constellation and the rain
+  canvas sized to their containers (previously only window resizes did).
+
 ## [1.4.0] - 2026-10-11
 
 ### Changed

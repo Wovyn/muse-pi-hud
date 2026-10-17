@@ -105,7 +105,10 @@ Design rules for new collectors:
   with always-on name labels and rich hover tooltips.
 - Layout: Gadget Vitals takes the left half of the page; the right half stacks
   the Process Constellation over the Event Console in equal halves. Data
-  Uplinks live in a slim bar pinned to the bottom of the viewport.
+  Uplinks live in a slim bar pinned to the bottom of the viewport. The layout
+  fills the browser height: the grid grows to fit, the trend chart flexes to
+  fill the Vitals panel, and panels resize with the window. The footer shows
+  the running version.
 - The EVENT CONSOLE is a Matrix-style "telemetry rain": one lane per event
   category, each event falling as a severity-colored glyph. Hover a glyph for
   timestamp/source/summary; click to open the chronological detail modal
@@ -113,7 +116,11 @@ Design rules for new collectors:
   and detail lines for audit entries (shell commands with `$` prefix, file
   paths, durations, byte counts) are preserved in the modal.
 - Sounds are synthesized with WebAudio (no audio files): master toggle,
-  per-category toggles, and volume.
+  per-category toggles, and volume. Ambient process sounds add short
+  random-pitch blips for process CPU/memory rises (higher band) and falls
+  (lower band), past an adaptive deadband that tracks recent activity, with
+  a PROCESS toggle in Settings (plus a TEST button) and a speaker button in the Constellation header that cycles
+  Mute -> Low -> Medium -> Loud.
 - Light mode ("day shift") toggle in the header restyles all charts in place.
 - Every dashboard preference — theme, selected gauge, console controls, sound
   settings — persists in browser localStorage and restores on reopen.

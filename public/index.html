@@ -48,7 +48,7 @@
 
   <div class="right-stack">
   <section class="panel procs">
-    <h2><span class="h2-glyph">&#9638;</span> PROCESS CONSTELLATION <span class="view-toggle"><button data-view="graph" class="active">GRAPH</button><button data-view="table">TABLE</button></span></h2>
+    <h2><span class="h2-glyph">&#9638;</span> PROCESS CONSTELLATION <span class="view-toggle"><button data-view="graph" class="active">GRAPH</button><button data-view="table">TABLE</button><button id="btn-proc-mute" class="active" title="toggle process sounds">🔊</button></span></h2>
     <div id="proc-graph" class="proc-graph"></div>
     <div id="proc-list" class="proc-list"><div class="dim">awaiting telemetry…</div></div>
     <div class="panel-note">nodes drift on live CPU — size ~ activity, hue ~ memory, links = parent&rarr;child</div>
@@ -115,7 +115,7 @@
 </aside>
 
 <footer class="foot">
-  <span class="dim">MUSE-PI-1 // MUSE GADGET HUD // collectors: vitals, processes, network, mqtt(stub), audit(waiting)</span>
+  <span class="dim">MUSE-PI-1 // MUSE GADGET HUD // collectors: vitals, processes, network, mqtt(stub), audit(waiting)</span> <span id="hud-version" class="hud-version"></span>
 </footer>
 
 <script src="vendor/echarts.min.js"></script>

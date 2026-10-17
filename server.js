@@ -8,6 +8,7 @@ const fs = require('fs');
 const path = require('path');
 const { EventEmitter } = require('events');
 const WebSocket = require('ws');
+const PKG = require('./package.json');
 
 const PORT = parseInt(process.env.HUD_PORT || '8080', 10);
 const ROOT = __dirname;
@@ -102,7 +103,7 @@ const server = http.createServer((req, res) => {
   }
   if (url === '/api/health') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ ok: true, uptime_s: Math.floor(process.uptime()) }));
+    res.end(JSON.stringify({ ok: true, version: PKG.version, uptime_s: Math.floor(process.uptime()) }));
     return;
   }
   serveStatic(req, res);
@@ -118,7 +119,7 @@ function broadcast(msg) {
   }
 }
 wss.on('connection', (ws) => {
-  ws.send(JSON.stringify({ type: 'hello', snapshot, events: eventLog.slice(-100) }));
+  ws.send(JSON.stringify({ type: 'hello', version: PKG.version, snapshot, events: eventLog.slice(-100) }));
 });
 
 pushEvent({ source: 'hud', category: 'system', severity: 'info',

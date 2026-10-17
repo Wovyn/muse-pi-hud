@@ -11,8 +11,8 @@ function buildPalette() {
   var light = document.body.classList.contains('light');
   return {
     cat: light
-      ? { system: '#0a7d99', sensor: '#0d8a4e', command: '#a86e00', network: '#8a3fd1', app: '#5468d8' }
-      : { system: '#35e0ff', sensor: '#52ffa8', command: '#ffc857', network: '#d07bff', app: '#8f9bff' },
+      ? { system: '#0a7d99', sensor: '#0d8a4e', command: '#a86e00', network: '#8a3fd1', app: '#5468d8', process: '#b45309' }
+      : { system: '#35e0ff', sensor: '#52ffa8', command: '#ffc857', network: '#d07bff', app: '#8f9bff', process: '#ffb86c' },
     gauge: light ? '#0a8aa8' : '#35e0ff',
     gaugeTrack: light ? 'rgba(10,138,168,0.20)' : 'rgba(53,224,255,0.15)',
     gaugeDetail: light ? '#0b3d4d' : '#c9f2ff',
@@ -41,17 +41,30 @@ var store = {
 var Sound = {
   ctx: null, master: store.get('snd.master', true), vol: store.get('snd.vol', 50),
   cats: store.get('snd.cats', { system: true, sensor: true, command: true, network: true, app: true }),
+  procLevel: store.get('snd.proclevel', 'high'),
+  comp: null,
   ensure: function () {
     if (!this.ctx) { try { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} }
     if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
+    if (this.ctx && !this.comp) {
+      try {
+        this.comp = this.ctx.createDynamicsCompressor();
+        this.comp.threshold.value = -12; this.comp.knee.value = 18;
+        this.comp.ratio.value = 8; this.comp.attack.value = 0.002;
+        this.comp.release.value = 0.25;
+        this.comp.connect(this.ctx.destination);
+      } catch (e) { this.comp = null; }
+    }
   },
+  // master output bus: compressor when available, else raw destination
+  out: function () { return this.comp || (this.ctx && this.ctx.destination); },
   // category -> [freqHz, durationMs, waveType, gainScale]
   voice: function (cat, sev) {
-    if (sev === 'error') return [196, 320, 'sawtooth', 0.5];
-    if (sev === 'warn') return [392, 160, 'triangle', 0.4];
+    if (sev === 'error') return [196, 320, 'sawtooth', 0.35];
+    if (sev === 'warn') return [392, 160, 'triangle', 0.3];
     var m = {
       system: [660, 70, 'sine', 0.25], sensor: [880, 60, 'sine', 0.22],
-      command: [520, 70, 'square', 0.12], network: [740, 90, 'triangle', 0.25],
+      command: [520, 70, 'triangle', 0.12], network: [740, 90, 'triangle', 0.25],
       app: [600, 80, 'sine', 0.22],
     };
     return m[cat] || [500, 70, 'sine', 0.2];
@@ -68,8 +81,35 @@ var Sound = {
     g.gain.setValueAtTime(0.0001, t);
     g.gain.exponentialRampToValueAtTime(Math.max(0.0002, peak), t + 0.012);
     g.gain.exponentialRampToValueAtTime(0.0001, t + v[1] / 1000);
-    o.connect(g); g.connect(this.ctx.destination);
+    o.connect(g); g.connect(this.out());
     o.start(t); o.stop(t + v[1] / 1000 + 0.05);
+  },
+  // ambient process sonification: short random-pitch blip, up = higher band
+  tinkle: function (dir, mag) {
+    if (!this.master || this.procLevel === 'mute') return;
+    this.blip(dir > 0 ? 1400 + Math.random() * 1200 : 600 + Math.random() * 500,
+      0.05 + Math.random() * 0.04,
+      (this.vol / 100) * PROC_LEVEL_FACTOR[this.procLevel] * 0.18 * (0.4 + 0.6 * Math.min(1, mag || 0)));
+  },
+  // raw blip; testTinkle bypasses the process flag (still respects master)
+  blip: function (freq, dur, peak) {
+    this.ensure();
+    if (!this.ctx) return;
+    var t = this.ctx.currentTime;
+    var o = this.ctx.createOscillator(), g = this.ctx.createGain();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(freq, t);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(Math.max(0.0002, peak), t + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(this.out());
+    o.start(t); o.stop(t + dur + 0.03);
+  },
+  testTinkle: function () {
+    if (!this.master) return;
+    this.blip(2000, 0.08, (this.vol / 100) * 0.18);
+    var self = this;
+    setTimeout(function () { self.blip(800, 0.09, (self.vol / 100) * 0.18); }, 350);
   },
 };
 document.addEventListener('pointerdown', function once() { Sound.ensure(); }, { once: false });
@@ -480,6 +520,20 @@ function initCharts() {
     if (trendChart) trendChart.resize();
     if (procGraph) procGraph.resize();
   });
+  // keep charts + rain sized to their containers: the flex layout shifts
+  // container sizes without a window resize (window listener is fallback)
+  if (window.ResizeObserver) {
+    var ro = new ResizeObserver(function () {
+      Object.keys(gauges).forEach(function (k) { gauges[k].resize(); });
+      if (trendChart) trendChart.resize();
+      if (procGraph) procGraph.resize();
+      layoutRain();
+    });
+    ['trend-chart', 'proc-graph', 'rain-wrap'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) ro.observe(el);
+    });
+  }
 }
 function setGauge(id, v) {
   if (gauges[id]) gauges[id].setOption({ series: [{ data: [{ value: Math.round(v * 10) / 10 }] }] });
@@ -719,6 +773,99 @@ function escapeHtml(s) {
   });
 }
 
+/* ---------- ambient process sonification ---------- */
+var prevProcs = new Map();
+// adaptive deadband: thresholds track recent activity, so a quiet Pi still
+// tinkles on small moves and a busy Pi does not chatter
+var cpuHist = [], memHist = [];
+function adaptiveThreshold(hist, floor) {
+  var nz = hist.filter(function (v) { return v > 0; });
+  if (!nz.length) return floor;
+  nz.sort(function (a, b) { return a - b; });
+  return Math.max(floor, nz[Math.min(nz.length - 1, Math.floor(nz.length * 0.6))]);
+}
+function sonifyProcesses(top) {
+  var cpuThr = adaptiveThreshold(cpuHist, 0.3);
+  var memThr = adaptiveThreshold(memHist, 0.01);
+  var cands = [];
+  top.forEach(function (p) {
+    var prev = prevProcs.get(p.pid);
+    if (!prev) return; // new entry: no baseline, no beep
+    var dCpu = (p.cpu_pct || 0) - prev.cpu;
+    var dMem = prev.mem > 0 ? ((p.mem_kb || 0) - prev.mem) / prev.mem : 0;
+    cpuHist.push(Math.abs(dCpu));
+    memHist.push(Math.abs(dMem));
+    var up = 0, down = 0;
+    if (dCpu >= cpuThr) up = Math.max(up, Math.min(1, dCpu / 20));
+    if (dMem >= memThr) up = Math.max(up, Math.min(1, dMem / 0.5));
+    if (dCpu <= -cpuThr) down = Math.max(down, Math.min(1, -dCpu / 20));
+    if (dMem <= -memThr) down = Math.max(down, Math.min(1, -dMem / 0.5));
+    if (up > 0) cands.push({ dir: 1, mag: up });
+    else if (down > 0) cands.push({ dir: -1, mag: down });
+  });
+  if (cpuHist.length > 150) cpuHist.splice(0, cpuHist.length - 150);
+  if (memHist.length > 150) memHist.splice(0, memHist.length - 150);
+  prevProcs = new Map(top.map(function (p) {
+    return [p.pid, { cpu: p.cpu_pct || 0, mem: p.mem_kb || 0 }];
+  }));
+  cands.sort(function (a, b) { return b.mag - a.mag; });
+  cands.slice(0, 5).forEach(function (c) {
+    setTimeout(function () { Sound.tinkle(c.dir, c.mag); }, Math.random() * 4000);
+  });
+}
+// process volume levels: header button cycles high -> med -> low -> mute
+var PROC_LEVEL_ORDER = ['mute', 'low', 'med', 'high'];
+var PROC_LEVEL_FACTOR = { high: 1.0, med: 0.5, low: 0.2, mute: 0 };
+var PROC_LEVEL_ICON = { high: '🔊', med: '🔉', low: '🔈', mute: '🔇' };
+var PROC_LEVEL_LABEL = { high: 'loud', med: 'medium', low: 'low', mute: 'muted' };
+var PROC_LEVEL_NEXT = { high: 'mute', med: 'loud', low: 'medium', mute: 'low' };
+function isProcessSoundOn() { return Sound.procLevel !== 'mute'; }
+function syncProcMuteUI() {
+  var b = document.getElementById('btn-proc-mute');
+  if (b) {
+    b.classList.toggle('active', isProcessSoundOn());
+    b.textContent = PROC_LEVEL_ICON[Sound.procLevel] || '🔊';
+    b.title = 'process volume ' + PROC_LEVEL_LABEL[Sound.procLevel] + ' — click for ' + PROC_LEVEL_NEXT[Sound.procLevel];
+  }
+  var cb = document.getElementById('snd-process');
+  if (cb) cb.checked = isProcessSoundOn();
+}
+function setProcLevel(level, confirm) {
+  if (PROC_LEVEL_ORDER.indexOf(level) === -1) level = 'high';
+  Sound.procLevel = level;
+  store.set('snd.proclevel', level);
+  Sound.cats.process = level !== 'mute';
+  store.set('snd.cats', Sound.cats);
+  syncProcMuteUI();
+  if (level !== 'mute' && confirm) Sound.tinkle(1, 1);
+}
+function cycleProcLevel() {
+  var i = PROC_LEVEL_ORDER.indexOf(Sound.procLevel);
+  setProcLevel(PROC_LEVEL_ORDER[(i + 1) % PROC_LEVEL_ORDER.length], true);
+}
+function setProcessSound(on, confirm) {
+  // Settings checkbox: off -> mute (remembering level), on -> restore it
+  if (on) {
+    var prev = store.get('snd.procprev', 'high');
+    setProcLevel(prev === 'mute' || PROC_LEVEL_ORDER.indexOf(prev) === -1 ? 'high' : prev, confirm);
+  } else {
+    if (Sound.procLevel !== 'mute') store.set('snd.procprev', Sound.procLevel);
+    setProcLevel('mute', false);
+  }
+}
+function initProcMute() {
+  // one-time migration from the old boolean toggle
+  if (!store.get('snd.proclevel', null)) {
+    if (Sound.cats.process === false) Sound.procLevel = 'mute';
+    store.set('snd.proclevel', Sound.procLevel);
+  }
+  if (PROC_LEVEL_ORDER.indexOf(Sound.procLevel) === -1) Sound.procLevel = 'high';
+  store.set('snd.proclevel', Sound.procLevel);
+  syncProcMuteUI();
+  var b = document.getElementById('btn-proc-mute');
+  if (b) b.addEventListener('click', cycleProcLevel);
+}
+
 /* ---------- sound controls ---------- */
 function buildSoundControls() {
   var box = document.getElementById('snd-cats');
@@ -737,6 +884,25 @@ function buildSoundControls() {
     lab.appendChild(document.createTextNode(cat.toUpperCase()));
     box.appendChild(lab);
   });
+  // process ambient sounds: NOT an event category (no rain lane), own toggle
+  (function () {
+    var lab = document.createElement('label');
+    lab.className = 'cat-toggle';
+    var cb = document.createElement('input');
+    cb.type = 'checkbox'; cb.id = 'snd-process'; cb.checked = isProcessSoundOn();
+    cb.addEventListener('change', function () { setProcessSound(cb.checked, true); });
+    var dot = document.createElement('span');
+    dot.className = 'cat-dot'; dot.style.background = PAL.cat.process;
+    dot.style.boxShadow = '0 0 6px ' + PAL.cat.process;
+    lab.appendChild(cb); lab.appendChild(dot);
+    lab.appendChild(document.createTextNode('PROCESS'));
+    box.appendChild(lab);
+    var tb = document.createElement('button');
+    tb.type = 'button'; tb.className = 'btn-test'; tb.textContent = 'TEST';
+    tb.title = 'play one up-blip and one down-blip';
+    tb.addEventListener('click', function () { Sound.testTinkle(); });
+    box.appendChild(tb);
+  })();
   var m = document.getElementById('snd-master');
   m.checked = Sound.master;
   m.addEventListener('change', function () { Sound.master = m.checked; store.set('snd.master', m.checked); Sound.ensure(); });
@@ -762,6 +928,7 @@ function connect() {
     try { msg = JSON.parse(m.data); } catch (e) { return; }
     if (msg.type === 'hello') {
       renderSnapshot(msg.snapshot);
+      if (msg.version) { var vEl = document.getElementById('hud-version'); if (vEl) vEl.textContent = 'v' + msg.version; }
       (msg.events || []).forEach(function (ev) { Console_.add(ev); });
     } else if (msg.type === 'event') {
       Console_.add(msg.event);
@@ -771,6 +938,7 @@ function connect() {
       // merge into a cached full snapshot for consistent rendering
       lastSnapshot.collectors[msg.collector] = msg.data;
       renderSnapshot(lastSnapshot);
+      if (msg.collector === 'processes') { var pd = (lastSnapshot.collectors.processes || {}).data; if (pd && pd.top) sonifyProcesses(pd.top); }
     }
   };
 }
@@ -871,6 +1039,7 @@ applyTheme(store.get('theme', 'dark'), true);
 try { initCharts(); } catch (e) { console.error('initCharts failed:', e); }
 try { applyProcView(); } catch (e) { console.error('applyProcView failed:', e); }
 try { buildSoundControls(); } catch (e) { console.error('buildSoundControls failed:', e); }
+try { initProcMute(); } catch (e) { console.error('initProcMute failed:', e); }
 syncConsoleControls();
 connect();
 Console_.add({ t: new Date().toISOString(), source: 'hud-ui', category: 'system',

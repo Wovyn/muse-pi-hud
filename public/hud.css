@@ -59,6 +59,7 @@ body {
   font-family: var(--mono);
   font-size: 13px;
   min-height: 100vh;
+  display: flex; flex-direction: column;
 }
 .scanlines {
   position: fixed; inset: 0; pointer-events: none; z-index: 50;
@@ -68,6 +69,7 @@ body {
 
 /* top bar */
 .topbar {
+  flex: none;
   display: flex; justify-content: space-between; align-items: center;
   padding: 10px 18px; border-bottom: 1px solid var(--line);
   background: linear-gradient(180deg, rgba(10,60,80,0.35), transparent);
@@ -85,6 +87,7 @@ body {
 
 /* layout */
 .grid {
+  flex: 1 0 auto;
   display: grid; gap: 12px; padding: 12px 18px;
   grid-template-columns: repeat(12, 1fr);
 }
@@ -176,7 +179,7 @@ select.btn { appearance: none; }
 .ev .cat-app { color: var(--violet); }
 .ev-detail { color: var(--dim); font-size: 11px; padding-left: 18px; opacity: 0.9; }
 
-.foot { padding: 10px 18px 16px; font-size: 11px; }
+.foot { flex: none; padding: 10px 18px 16px; font-size: 11px; }
 
 @media (max-width: 1100px) {
   .vitals, .right-stack { grid-column: span 12; }
@@ -301,3 +304,18 @@ body { padding-bottom: 48px; }
 .uplink-items { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
 .up-item { display: inline-flex; align-items: center; gap: 7px; }
 .up-name { letter-spacing: 1px; color: var(--text); }
+
+/* viewport-filling layout: vitals trend absorbs extra height (1.5.0) */
+.vitals { display: flex; flex-direction: column; }
+.vitals > :not(.vitals-wide) { flex: none; }
+.vitals-wide { flex: 1 1 0; min-height: 196px; display: flex; flex-direction: column; }
+.vitals-wide .trend-chart { flex: 1 1 0; min-height: 0; height: auto; }
+.vitals-wide .gauge-label { flex: none; }
+
+/* process mute button: speaker emoji (1.5.x) */
+#btn-proc-mute { font-size: 14px; line-height: 1; padding: 0 8px; }
+.btn-test { margin-left: 6px; background: transparent; color: var(--dim); border: 1px solid var(--line); font-family: var(--mono); font-size: 10px; letter-spacing: 2px; padding: 3px 10px; border-radius: 3px; cursor: pointer; }
+.btn-test:hover { color: var(--cyan); border-color: var(--cyan-dim); }
+
+/* footer version tag */
+.hud-version { color: var(--dim); font-size: 11px; letter-spacing: 1px; }
