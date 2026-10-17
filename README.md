@@ -97,9 +97,12 @@ Design rules for new collectors:
   trend chart. Network gauges show total throughput; the trend chart breaks it
   out per interface.
 - The trend chart keeps a 900-sample ring buffer per metric (~30 minutes at the
-  2s snapshot cadence). Switching metrics renders the full retained history
-  immediately — never an empty chart. Buffers are in-memory only; a page
-  reload starts fresh.
+  2s snapshot cadence). Switching metrics renders the retained history
+  immediately — never an empty chart. Window buttons above the chart
+  (1 / 5 / 15 / 30 MIN) set how much of the buffer is shown; the choice is
+  stored and applies to any metric. A ROTATE button cycles through all six
+  metrics, 10s each; clicking any gauge by hand stops rotation. Buffers are
+  in-memory only; a page reload starts fresh.
 - The PROCESSES CONSTELLATION panel renders top processes as a force-directed
   graph: node size ~ CPU activity, hue ~ memory, edges = parent→child (ppid),
   with always-on name labels and rich hover tooltips.

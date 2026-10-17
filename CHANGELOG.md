@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.1] - 2026-10-17
+
+### Added
+- Trend window buttons (1 / 5 / 15 / 30 MIN) above the trend chart: they set
+  the view size only -- the buffer still holds 30 minutes. The choice is
+  stored and applies to any selected metric; the trend label shows the
+  active window.
+- ROTATE button above the trend chart: cycles through all six trend metrics
+  (CPU, MEM, SoC TEMP, DISK, NET RX, NET TX), 10s each, moving the gauge
+  highlight with it. Clicking any gauge by hand stops rotation.
+
 ## [1.5.0] - 2026-10-16
 
 ### Added

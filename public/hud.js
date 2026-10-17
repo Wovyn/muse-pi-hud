@@ -514,6 +514,13 @@ function initCharts() {
   trendChart = echarts.init(document.getElementById('trend-chart'));
   trendChart.setOption(trendBaseOption());
   initProcGraph();
+  // trend window + rotate controls
+  document.querySelectorAll('[data-window]').forEach(function (el) {
+    el.addEventListener('click', function () { setTrendWindow(+el.getAttribute('data-window')); });
+  });
+  var rb = document.getElementById('btn-rotate');
+  if (rb) rb.addEventListener('click', toggleRotation);
+  setTrendWindow(store.get('trend.window', 30)); // stored view, default 30 min
   selectMetric(store.get('trend.metric', 'cpu'));
   window.addEventListener('resize', function () {
     Object.keys(gauges).forEach(function (k) { gauges[k].resize(); });
@@ -552,6 +559,45 @@ function setRateGauge(id, rate) {
    the retained buffer immediately — never an empty chart. */
 var trendChart = null;
 var trendMetric = 'cpu';
+/* trend window: view size in minutes (buffer stays full 30 min); stored */
+var TREND_WINDOWS = [1, 5, 15, 30];
+var trendWindow = 30;
+function setTrendWindow(mins) {
+  mins = +mins;
+  if (TREND_WINDOWS.indexOf(mins) === -1) mins = 30;
+  trendWindow = mins;
+  store.set('trend.window', mins);
+  document.querySelectorAll('[data-window]').forEach(function (el) {
+    el.classList.toggle('active', +el.getAttribute('data-window') === mins);
+  });
+  renderTrend();
+}
+/* trend rotation: cycle metrics every 10s; a manual gauge click stops it */
+var ROTATE_METRICS = ['cpu', 'mem', 'temp', 'disk', 'netrx', 'nettx'];
+var ROTATE_MS = 10000;
+var rotateTimer = null;
+function syncRotateBtn() {
+  var b = document.getElementById('btn-rotate');
+  if (!b) return;
+  b.classList.toggle('active', rotateTimer !== null);
+  b.textContent = rotateTimer !== null ? '❚❚ ROTATING' : '▶ ROTATE';
+  b.title = rotateTimer !== null ? 'stop rotation' : 'rotate through all metrics, 10s each';
+}
+function stopRotation() {
+  if (rotateTimer) { clearInterval(rotateTimer); rotateTimer = null; }
+  syncRotateBtn();
+}
+function rotateStep() {
+  var i = ROTATE_METRICS.indexOf(trendMetric);
+  selectMetric(ROTATE_METRICS[(i + 1) % ROTATE_METRICS.length], true);
+}
+function startRotation() {
+  if (rotateTimer) return;
+  rotateStep(); // advance immediately so play feels responsive
+  rotateTimer = setInterval(rotateStep, ROTATE_MS);
+  syncRotateBtn();
+}
+function toggleRotation() { rotateTimer ? stopRotation() : startRotation(); }
 var netIfaces = []; // discovered from the network collector
 
 function trendDef() {
@@ -597,7 +643,7 @@ function renderTrend() {
   if (!trendChart) return;
   var def = trendDef();
   var series = def.series.map(function (s) {
-    return { name: s.name, type: 'line', data: Hist.get(s.key).slice(),
+    return { name: s.name, type: 'line', data: Hist.get(s.key).slice(-trendWindow * 30), // view window: 2s samples, 30/min
       showSymbol: false, smooth: true,
       lineStyle: { color: s.color, width: s.width },
       areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
@@ -615,9 +661,10 @@ function renderTrend() {
     series: series,
     animationDuration: 300,
   }, true);
-  document.getElementById('trend-label').textContent = 'TREND // ' + def.label;
+  document.getElementById('trend-label').textContent = 'TREND // ' + def.label + ' · ' + trendWindow + ' MIN';
 }
-function selectMetric(id) {
+function selectMetric(id, fromRotate) {
+  if (!fromRotate) stopRotation(); // a manual gauge click stops rotation
   trendMetric = id;
   store.set('trend.metric', id);
   document.querySelectorAll('.gauge[data-metric]').forEach(function (el) {
