@@ -205,6 +205,10 @@ select.btn { appearance: none; }
 }
 .view-toggle button.active { color: var(--cyan); border-color: var(--cyan-dim); background: rgba(53,224,255,0.10); }
 
+/* panel header uptime (added Oct 21) */
+.panel-uptime { margin-left: auto; font-size: 11px; letter-spacing: 2px; color: var(--dim); font-weight: 400; }
+.panel-uptime .v { color: var(--green); text-shadow: 0 0 8px rgba(82,255,168,0.4); }
+
 /* trend controls: window buttons + rotate (added Oct 17) */
 .trend-controls { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: 2px 0 6px; }
 .trend-windows { display: inline-flex; gap: 4px; }
@@ -264,6 +268,17 @@ select.btn { appearance: none; }
 .modal-body { flex: 1; padding: 16px 18px; overflow-y: auto; }
 .modal-body h3 { margin: 0 0 12px; font-size: 12px; letter-spacing: 3px; color: var(--cyan); font-weight: 600; }
 .modal-sec.hidden { display: none; }
+
+/* general settings: HUD name (added Oct 25) */
+.name-row { display: flex; align-items: center; gap: 8px; margin: 10px 0; flex-wrap: wrap; }
+.name-label { font-size: 11px; letter-spacing: 2px; color: var(--dim); }
+#hud-name-input {
+  background: rgba(0,0,0,0.25); border: 1px solid var(--line); color: var(--text);
+  font-family: var(--mono); font-size: 13px; letter-spacing: 2px; text-transform: uppercase;
+  padding: 5px 8px; border-radius: 3px; width: 230px; margin-left: 6px;
+}
+#hud-name-input:focus { outline: none; border-color: var(--cyan); }
+.name-status { font-size: 11px; letter-spacing: 1px; color: var(--green); }
 .modal-close {
   position: absolute; top: 8px; right: 10px;
   background: transparent; border: none; color: var(--dim);

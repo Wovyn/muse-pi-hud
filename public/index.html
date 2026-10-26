@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>MUSE-PI-1 // MUSE GADGET HUD</title>
+<title>__HUD_NAME__ // MUSE GADGET HUD</title>
 <link rel="stylesheet" href="hud.css">
 </head>
 <body>
@@ -11,7 +11,7 @@
 <header class="topbar">
   <div class="brand">
     <span class="brand-mark">&#9673;</span>
-    <span class="brand-name">MUSE-PI-1 <span class="dim">// MUSE GADGET HUD</span></span>
+    <span class="brand-name"><span id="brand-name-text">__HUD_NAME__</span> <span class="dim">// MUSE GADGET HUD</span></span>
   </div>
   <div class="topbar-right">
     <button id="btn-theme" class="btn" title="toggle light / dark mode">&#9788; LIGHT</button>
@@ -26,7 +26,7 @@
 
 <main class="grid">
   <section class="panel vitals">
-    <h2><span class="h2-glyph">&#9638;</span> GADGET VITALS</h2>
+    <h2><span class="h2-glyph">&#9638;</span> GADGET VITALS <span class="panel-uptime">UPTIME <span id="v-uptime" class="v">—</span></span></h2>
     <div class="gauges">
       <div class="gauge" data-metric="cpu"><div id="g-cpu" class="gauge-chart"></div><div class="gauge-label">CPU</div></div>
       <div class="gauge" data-metric="mem"><div id="g-mem" class="gauge-chart"></div><div class="gauge-label">MEM</div></div>
@@ -40,8 +40,7 @@
     <div class="vitals-wide"><div id="trend-chart" class="trend-chart"></div><div class="gauge-label" id="trend-label">TREND // CPU</div></div>
     <div class="readouts">
       <div class="readout"><span class="k">LOAD</span><span id="r-load" class="v">—</span></div>
-      <div class="readout"><span class="k">UPTIME</span><span id="r-uptime" class="v">—</span></div>
-      <div class="readout"><span class="k">PROCS</span><span id="r-procs" class="v">—</span></div>
+        <div class="readout"><span class="k">PROCS</span><span id="r-procs" class="v">—</span></div>
       <div class="readout"><span class="k">SWAP</span><span id="r-swap" class="v">—</span></div>
       <div class="readout"><span class="k">AVAIL</span><span id="r-avail" class="v">—</span></div>
     </div>
@@ -82,9 +81,19 @@
 <div id="modal-overlay" class="modal-overlay hidden">
   <div class="modal" role="dialog" aria-label="Settings">
     <div class="modal-nav">
+      <button class="nav-item" data-sec="general">General</button>
       <button class="nav-item active" data-sec="sound">Sound</button>
     </div>
     <div class="modal-body">
+      <section id="msec-general" class="modal-sec hidden">
+        <h3>GENERAL <span class="tag">this install</span></h3>
+        <div class="name-row">
+          <label class="name-label">HUD NAME <input type="text" id="hud-name-input" maxlength="32" autocomplete="off" spellcheck="false"></label>
+          <button id="hud-name-save" class="btn-test">SAVE</button>
+          <span id="hud-name-status" class="name-status"></span>
+        </div>
+        <div class="panel-note">Blank = Pi hostname. The name shows in the tab title, header, and footer, and is the same on every browser.</div>
+      </section>
       <section id="msec-sound" class="modal-sec">
         <h3>AUDIO <span class="tag">beeps &amp; boops</span></h3>
         <div class="sound-row">
@@ -116,7 +125,7 @@
 </aside>
 
 <footer class="foot">
-  <span class="dim">MUSE-PI-1 // MUSE GADGET HUD // collectors: vitals, processes, network, mqtt(stub), audit(waiting)</span> <span id="hud-version" class="hud-version"></span>
+  <span class="dim"><span id="foot-name">__HUD_NAME__</span> // MUSE GADGET HUD // collectors: vitals, processes, network, mqtt(stub), audit(waiting)</span> <span id="hud-version" class="hud-version"></span>
 </footer>
 
 <script src="vendor/echarts.min.js"></script>

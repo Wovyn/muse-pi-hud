@@ -756,7 +756,9 @@ function renderSnapshot(snap) {
   if (w.temp_c !== null && w.temp_c !== undefined) { setGauge('g-temp', w.temp_c); Hist.push('temp', w.temp_c); }
   if (w.disk) { setGauge('g-disk', w.disk.pct); Hist.push('disk', w.disk.pct); }
   document.getElementById('r-load').textContent = w.load ? w.load.join(' ') : '—';
-  document.getElementById('r-uptime').textContent = fmtUptime(w.uptime_s);
+  var vu = document.getElementById('v-uptime');
+  vu.textContent = fmtUptime(w.uptime_s);
+  if (w.uptime_s) vu.parentElement.title = 'Pi uptime -- booted ' + new Date(Date.now() - w.uptime_s * 1000).toLocaleString();
   var mem0 = w.mem || {};
   var swapEl = document.getElementById('r-swap');
   if (mem0.swap_total_kb) {
@@ -958,6 +960,21 @@ function buildSoundControls() {
   v.addEventListener('input', function () { Sound.vol = +v.value; store.set('snd.vol', Sound.vol); });
 }
 
+/* ---------- HUD display name (server-side; same on every browser) ------ */
+function applyHudName(state) {
+  if (!state || !state.name) return;
+  var b = document.getElementById('brand-name-text');
+  if (b) b.textContent = state.name;
+  var f = document.getElementById('foot-name');
+  if (f) f.textContent = state.name;
+  document.title = state.name + ' // MUSE GADGET HUD';
+  var input = document.getElementById('hud-name-input');
+  if (input) {
+    input.placeholder = state.name;
+    if (document.activeElement !== input) input.value = state.isCustom ? state.name : '';
+  }
+}
+
 /* ---------- websocket link ---------- */
 var wsStatus = document.getElementById('ws-status');
 function setLink(up) {
@@ -976,7 +993,10 @@ function connect() {
     if (msg.type === 'hello') {
       renderSnapshot(msg.snapshot);
       if (msg.version) { var vEl = document.getElementById('hud-version'); if (vEl) vEl.textContent = 'v' + msg.version; }
+      if (msg.hudName) applyHudName(msg.hudName);
       (msg.events || []).forEach(function (ev) { Console_.add(ev); });
+    } else if (msg.type === 'hud-name') {
+      applyHudName(msg.hudName);
     } else if (msg.type === 'event') {
       Console_.add(msg.event);
     } else if (msg.type === 'snapshot') {
@@ -997,15 +1017,16 @@ renderSnapshot = function (snap) { lastSnapshot = snap; _render(snap); };
 /* ---------- process view toggle: constellation <-> table ----------
    Default is the constellation; the choice persists in localStorage. */
 var procView = store.get('proc.view', 'graph');
+if (procView !== 'graph' && procView !== 'table') { procView = 'graph'; store.set('proc.view', 'graph'); }
 function applyProcView() {
   var panel = document.querySelector('.panel.procs');
   if (panel) panel.classList.toggle('show-table', procView === 'table');
-  document.querySelectorAll('.view-toggle button').forEach(function (b) {
+  document.querySelectorAll('.view-toggle button[data-view]').forEach(function (b) {
     b.classList.toggle('active', b.getAttribute('data-view') === procView);
   });
   if (procView === 'graph' && procGraph) procGraph.resize();
 }
-document.querySelectorAll('.view-toggle button').forEach(function (b) {
+document.querySelectorAll('.view-toggle button[data-view]').forEach(function (b) {
   b.addEventListener('click', function () {
     procView = b.getAttribute('data-view');
     store.set('proc.view', procView);
@@ -1041,6 +1062,27 @@ document.querySelectorAll('.view-toggle button').forEach(function (b) {
       });
     });
   });
+  // HUD name: saved on the Pi, so every browser agrees
+  var nameInput = document.getElementById('hud-name-input');
+  var nameStatus = document.getElementById('hud-name-status');
+  function saveHudName() {
+    if (!nameInput) return;
+    var name = (nameInput.value || '').trim().toUpperCase();
+    nameInput.value = name;
+    fetch('/api/hud-name', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: name }) })
+      .then(function (r) { if (!r.ok) throw new Error('save failed'); return r.json(); })
+      .then(function (state) {
+        applyHudName(state);
+        if (nameStatus) {
+          nameStatus.textContent = name === '' ? 'Using Pi hostname' : 'Saved';
+          setTimeout(function () { if (nameStatus) nameStatus.textContent = ''; }, 2500);
+        }
+      })
+      .catch(function () { if (nameStatus) nameStatus.textContent = 'Save failed'; });
+  }
+  var saveBtn = document.getElementById('hud-name-save');
+  if (saveBtn) saveBtn.addEventListener('click', saveHudName);
+  if (nameInput) nameInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') saveHudName(); });
 })();
 
 /* ---------- clock ---------- */

@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.3] - 2026-10-25
+
+### Added
+- Server-side HUD display name: the Pi hostname is now the default name shown
+  in the tab title, header brand, and footer (previously hardcoded MUSE-PI-1),
+  injected by the server into the served page so the first paint is already
+  correct -- never a flash of a wrong name. A new General panel in Settings
+  (above Sound) holds a HUD NAME field: blank means the Pi hostname, and a
+  saved name is stored on the Pi, so every browser and device shows the same
+  name. Open pages pick up a rename live via a broadcast.
+
+## [1.5.2] - 2026-10-21
+
+### Changed
+- Pi uptime moved to the Gadget Vitals panel header (right side; hover shows
+  the boot time). It was easy to miss in the readouts strip at the bottom of
+  the panel, which no longer duplicates it.
+
+### Fixed
+- Mute button no longer resets the Process Constellation view: the view-switch
+  handler was bound to every button in the header row, including the mute
+  button, so clicking mute stored a null view and fell back to graph. The
+  handler (and the active-state sync) now only touches buttons that carry a
+  data-view, and a stored null view heals back to graph on load.
+
 ## [1.5.1] - 2026-10-17
 
 ### Added

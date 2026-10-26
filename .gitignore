@@ -7,3 +7,6 @@ node_modules/
 .DS_Store
 *.swp
 *~
+
+# Per-install HUD display-name override (server-side; never committed)
+hud-name.json

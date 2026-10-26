@@ -127,6 +127,10 @@ Design rules for new collectors:
 - Light mode ("day shift") toggle in the header restyles all charts in place.
 - Every dashboard preference — theme, selected gauge, console controls, sound
   settings — persists in browser localStorage and restores on reopen.
+- The HUD display name is the exception to browser-local prefs: it is stored
+  on the Pi (gitignored hud-name.json, blank = Pi hostname), injected into
+  the served page, and shown in the tab title, header, and footer. Edit it
+  in Settings -> General.
 - Audio starts on first click per browser autoplay policy. Everything is one
   page, no framework — extend `hud.js` panels as new collectors come online.
 
