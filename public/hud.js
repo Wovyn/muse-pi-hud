@@ -499,6 +499,7 @@ function initCharts() {
     ['g-cpu', 100, '%', false], ['g-mem', 100, '%', false],
     ['g-temp', 100, '°C', false], ['g-disk', 100, '%', false],
     ['g-netrx', 2048, '', true], ['g-nettx', 2048, '', true],
+  ['g-hailo', 100, '%', false],
   ];
   defs.forEach(function (g) {
     gaugeDefs[g[0]] = { max: g[1], unit: g[2], rate: g[3] };
@@ -573,7 +574,7 @@ function setTrendWindow(mins) {
   renderTrend();
 }
 /* trend rotation: cycle metrics every 10s; a manual gauge click stops it */
-var ROTATE_METRICS = ['cpu', 'mem', 'temp', 'disk', 'netrx', 'nettx'];
+var ROTATE_METRICS = ['cpu', 'mem', 'temp', 'disk', 'netrx', 'nettx', 'hailo'];
 var ROTATE_MS = 10000;
 var rotateTimer = null;
 function syncRotateBtn() {
@@ -623,6 +624,9 @@ function trendDef() {
       return { label: trendMetric === 'netrx' ? 'NET RX' : 'NET TX', unit: 'B/s', yMax: 'auto',
         yFmt: function (v) { return fmtRate(v); }, series: s };
     }
+    case 'hailo': return { label: 'HAILO', unit: '%', yMax: 100,
+      yFmt: function (v) { return v + '%'; },
+      series: [{ key: 'hailo', name: 'HAILO', color: PAL.gauge, width: 2 }] };
     default:      return { label: 'CPU', unit: '%', yMax: 100,
       yFmt: function (v) { return v + '%'; },
       series: [{ key: 'cpu', name: 'CPU', color: PAL.gauge, width: 2 }] };
@@ -788,6 +792,9 @@ function renderSnapshot(snap) {
     });
     if (changed && (trendMetric === 'netrx' || trendMetric === 'nettx')) renderTrend();
   }
+  // hailo
+  var h = (cols.hailo && cols.hailo.data) || {};
+  if (h.util_pct !== undefined) { setGauge('g-hailo', h.util_pct); Hist.push('hailo', h.util_pct); }
   renderTrend();
   // processes
   var p = (cols.processes && cols.processes.data) || {};
