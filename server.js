@@ -79,7 +79,7 @@ function registerCollector(name, mod) {
   }
 }
 
-for (const name of ['vitals', 'processes', 'network', 'mqtt', 'audit']) {
+for (const name of ['vitals', 'processes', 'network', 'mqtt', 'audit', 'hailo']) {
   registerCollector(name, require('./collectors/' + name + '.js'));
 }
 
