@@ -3,8 +3,16 @@
 // a network is loaded, but only when the app opts in with HAILO_MONITOR=1
 // (the detection cron sets it). Between inferences the files are absent,
 // which means idle: utilization 0. Snapshot every 2s like vitals.
+// Sampled utilization can never show the detection workload: one ~10ms
+// inference per minute is ~0.02% average, and a 2s sampler almost never
+// lands inside the 10ms window. So the gauge is event-based instead:
+// detect.py writes per-run stats (inference ms, timestamp, hits) to
+// ~/detections/hailo_stats.json after every run, and those drive the dial
+// (last inference ms) and one trend point per run. util_pct is kept in the
+// snapshot for reference but no longer drives the UI.
 // Emits: snapshot { device, device_id, arch, firmware, util_pct, active,
-//          model, pid, last_util_pct, last_active_at, last_detect_run }
+//          model, pid, last_util_pct, last_active_at, last_detect_run,
+//          infer_ms, last_run_at, run_hits, run_model }
 "use strict";
 const fs = require("fs");
 const { execFile } = require("child_process");
@@ -12,6 +20,7 @@ const { execFile } = require("child_process");
 const NNC_DIR = "/tmp/nnc_utilization";
 const HMON_DIR = "/tmp/hmon_files";
 const DETECT_LOG = "/home/pi/detections/log.csv";
+const STATS_PATH = "/home/pi/detections/hailo_stats.json";
 
 let deviceInfo = null;
 let lastUtil = null, lastActiveAt = null;
@@ -45,6 +54,15 @@ function lastDetectRun() {
     return last.split(",")[0] || null;
   } catch (e) { return null; }
 }
+function readStats() {
+  // per-run stats written by detect.py after every inference; null until
+  // the first run after this collector version lands
+  try {
+    const s = JSON.parse(fs.readFileSync(STATS_PATH, "utf8"));
+    if (Number.isFinite(+s.infer_ms)) return s;
+  } catch (e) { /* no run yet */ }
+  return null;
+}
 function probeDevice() {
   // one-shot: board identity for the snapshot; failure leaves it unknown
   execFile("hailortcli", ["fw-control", "identify"], (err, out) => {
@@ -68,6 +86,7 @@ module.exports = {
       const util = readUtil();
       const hmon = util !== null ? readHmon() : {};
       if (util !== null) { lastUtil = util; lastActiveAt = new Date().toISOString(); }
+      const stats = readStats();
       api.setSnapshot({
         device: deviceInfo ? deviceInfo.device : null,
         device_id: deviceInfo ? deviceInfo.device_id : null,
@@ -80,6 +99,10 @@ module.exports = {
         last_util_pct: lastUtil !== null ? +lastUtil.toFixed(1) : null,
         last_active_at: lastActiveAt,
         last_detect_run: lastDetectRun(),
+        infer_ms: stats ? +(+stats.infer_ms).toFixed(1) : null,
+        last_run_at: stats ? stats.ts || null : null,
+        run_hits: stats && Number.isFinite(+stats.hits) ? +stats.hits : null,
+        run_model: stats ? stats.model || null : null,
       });
     };
     tick();

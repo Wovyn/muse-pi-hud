@@ -499,7 +499,7 @@ function initCharts() {
     ['g-cpu', 100, '%', false], ['g-mem', 100, '%', false],
     ['g-temp', 100, '°C', false], ['g-disk', 100, '%', false],
     ['g-netrx', 2048, '', true], ['g-nettx', 2048, '', true],
-  ['g-hailo', 100, '%', false],
+  ['g-hailo', 50, 'ms', false],
   ];
   defs.forEach(function (g) {
     gaugeDefs[g[0]] = { max: g[1], unit: g[2], rate: g[3] };
@@ -624,8 +624,8 @@ function trendDef() {
       return { label: trendMetric === 'netrx' ? 'NET RX' : 'NET TX', unit: 'B/s', yMax: 'auto',
         yFmt: function (v) { return fmtRate(v); }, series: s };
     }
-    case 'hailo': return { label: 'HAILO', unit: '%', yMax: 100,
-      yFmt: function (v) { return v + '%'; },
+    case 'hailo': return { label: 'HAILO', unit: 'ms', yMax: 'auto',
+      yFmt: function (v) { return v + 'ms'; },
       series: [{ key: 'hailo', name: 'HAILO', color: PAL.gauge, width: 2 }] };
     default:      return { label: 'CPU', unit: '%', yMax: 100,
       yFmt: function (v) { return v + '%'; },
@@ -647,7 +647,10 @@ function renderTrend() {
   if (!trendChart) return;
   var def = trendDef();
   var series = def.series.map(function (s) {
-    return { name: s.name, type: 'line', data: Hist.get(s.key).slice(-trendWindow * 30), // view window: 2s samples, 30/min
+    // view window: 2s samples, 30/min — except hailo, which pushes one
+    // point per inference run (~1/min), so the window is in points
+    var n = s.key === 'hailo' ? trendWindow : trendWindow * 30;
+    return { name: s.name, type: 'line', data: Hist.get(s.key).slice(-n),
       showSymbol: false, smooth: true,
       lineStyle: { color: s.color, width: s.width },
       areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
@@ -751,6 +754,7 @@ function shortNote(n) {
 }
 
 /* ---------- snapshot -> UI ---------- */
+var lastHailoRun = null; // ts of the last inference run already pushed to history
 function renderSnapshot(snap) {
   var cols = snap.collectors || {};
   // vitals
@@ -792,9 +796,23 @@ function renderSnapshot(snap) {
     });
     if (changed && (trendMetric === 'netrx' || trendMetric === 'nettx')) renderTrend();
   }
-  // hailo
+  // hailo — event-based: dial shows last inference ms, trend gets one
+  // point per run (sampled util_pct can't show a 10ms/min workload)
   var h = (cols.hailo && cols.hailo.data) || {};
-  if (h.util_pct !== undefined) { setGauge('g-hailo', h.util_pct); Hist.push('hailo', h.util_pct); }
+  if (h.infer_ms !== undefined && h.infer_ms !== null) {
+    setGauge('g-hailo', h.infer_ms);
+    if (h.last_run_at && h.last_run_at !== lastHailoRun) {
+      lastHailoRun = h.last_run_at;
+      Hist.push('hailo', h.infer_ms);
+    }
+    var hsub = document.getElementById('g-hailo-sub');
+    if (hsub) {
+      var hh = (h.last_run_at || '').slice(11, 16) || '—';
+      var ht = 'last ' + hh + (h.run_model ? ' · ' + h.run_model : '');
+      if (h.run_hits) ht += ' · ' + h.run_hits + ' hit' + (h.run_hits > 1 ? 's' : '');
+      hsub.textContent = ht;
+    }
+  }
   renderTrend();
   // processes
   var p = (cols.processes && cols.processes.data) || {};

@@ -113,6 +113,7 @@ body {
 .gauges { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
 .gauge-chart { height: 110px; }
 .gauge-label { text-align: center; font-size: 10px; letter-spacing: 2px; color: var(--dim); margin-top: 2px; }
+.gauge-sub { text-align: center; font-size: 9px; letter-spacing: 1px; color: var(--dim); margin-top: 1px; min-height: 11px; }
 .vitals-wide { margin-top: 6px; }
 .cpu-history { height: 90px; }
 .readouts { display: flex; gap: 18px; margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--line); }
